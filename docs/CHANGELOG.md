@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 > For user-friendly release highlights, see the [GitHub Releases](https://github.com/ZhuLinsen/daily_stock_analysis/releases) page.
 
 ## [Unreleased]
+- [文档] 新增 `docs/wiki/data-fetch-interfaces.md`：统计单股分析各数据块的 Manager 入口、Fetcher/搜索 Provider fallback、底层库与 HTTP API，以及对应环境变量；并与 `stock-analysis.md`、文档索引互链。
+- [文档] 新增 `docs/wiki/stock-analysis.md`：从本仓库实现说明单股分析所需信息分层（硬依赖 / 日线骨架 / 实时·筹码·基本面·趋势·情报）、端到端流水线与决策仪表盘产出，并链到数据源与 AnalysisContextPack 专题。
 - [chore] 暂停 PR Review 的自动触发，仅保留 `workflow_dispatch` 手动入口，避免辅助评审重复运行及评论权限失败产生误导性红灯；正式 CI 检查保持不变。
 - [新功能] Multi-Agent specialist 运行在分析历史保存成功后，按独立 skill 持久化版本化、低敏且幂等的有效 opinion 样本，为后续后验评估提供真实数据；本阶段不计算 outcome、不统计表现、不调整权重。
 - [新功能] AI 建议页在既有后验统计中增加决策风格历史表现，按每个分组独立的 30 个已完成样本门槛展示命中、区间涨跌、无法评估和最大不利波动，并保持旧统计接口兼容。
