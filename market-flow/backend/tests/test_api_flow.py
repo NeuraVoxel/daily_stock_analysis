@@ -16,7 +16,7 @@ def test_get_flow_ok(monkeypatch):
     monkeypatch.setattr(
         fetch_eastmoney,
         "fetch_sector_fund_flow_rank",
-        lambda indicator: df,
+        lambda indicator, **kwargs: (df, "eastmoney"),
     )
     client = TestClient(app)
     res = client.get("/api/flow", params={"period": "realtime"})
@@ -43,10 +43,10 @@ def test_get_flow_stale_after_upstream_failure(monkeypatch):
     )
     calls = {"n": 0}
 
-    def fetch(indicator):
+    def fetch(indicator, **kwargs):
         calls["n"] += 1
         if calls["n"] == 1:
-            return df
+            return df, "eastmoney"
         raise RuntimeError("network")
 
     monkeypatch.setattr(
@@ -79,7 +79,7 @@ def test_get_flow_empty_data(monkeypatch):
     monkeypatch.setattr(
         fetch_eastmoney,
         "fetch_sector_fund_flow_rank",
-        lambda indicator: pd.DataFrame(),
+        lambda indicator, **kwargs: (pd.DataFrame(), "eastmoney"),
     )
     routes_flow._cache._store.clear()
     routes_flow._last_good.clear()
@@ -91,7 +91,7 @@ def test_get_flow_empty_data(monkeypatch):
 
 
 def test_get_flow_upstream_error(monkeypatch):
-    def boom(indicator):
+    def boom(indicator, **kwargs):
         raise RuntimeError("network")
 
     monkeypatch.setattr(

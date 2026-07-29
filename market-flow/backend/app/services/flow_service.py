@@ -24,12 +24,15 @@ def build_flow_response(
     stale: bool,
     top_n: int,
     top_m: int,
+    source: str = "eastmoney",
 ) -> FlowResponse:
     sectors = normalize_sector_rank_df(df, indicator=indicator)
     nodes_raw, links_raw, link_warnings = build_display_graph(
         sectors, top_n=top_n, top_m=top_m
     )
     warnings = list(extra_warnings) + link_warnings
+    if source == "tonghuashun":
+        warnings = ["数据源降级为同花顺行业资金流"] + warnings
     nodes = [FlowNode(**n) for n in nodes_raw]
     links = [
         DisplayLink.model_validate(
@@ -37,6 +40,10 @@ def build_flow_response(
         )
         for x in links_raw
     ]
+    source_label = {
+        "eastmoney": "akshare/eastmoney",
+        "tonghuashun": "akshare/tonghuashun",
+    }.get(source, source)
     return FlowResponse(
         period=period,
         as_of=as_of,
@@ -44,7 +51,7 @@ def build_flow_response(
         display_links=links,
         pair_links=[],
         meta=FlowMeta(
-            source="akshare/eastmoney",
+            source=source_label,
             link_mode="display_constructed",
             stale=stale,
             warnings=warnings,

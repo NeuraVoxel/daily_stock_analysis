@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Query
@@ -11,6 +12,8 @@ from app.services.aggregate import resolve_period
 from app.services.cache import TtlCache
 from app.services.flow_service import build_flow_response, now_as_of, ttl_for_period
 from app.settings import get_settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 _cache = TtlCache()
@@ -41,7 +44,10 @@ def get_flow(
         )
 
     def factory() -> FlowResponse:
-        df = fetch_eastmoney.fetch_sector_fund_flow_rank(indicator=indicator)
+        df, source = fetch_eastmoney.fetch_sector_fund_flow_rank(
+            indicator=indicator,
+            timeout_sec=float(settings.upstream_timeout_sec),
+        )
         if df is None or df.empty:
             raise RuntimeError("empty_data")
         return build_flow_response(
@@ -53,6 +59,7 @@ def get_flow(
             stale=False,
             top_n=settings.flow_top_n,
             top_m=settings.flow_top_m,
+            source=source,
         )
 
     try:
@@ -61,10 +68,13 @@ def get_flow(
             ttl_sec=ttl_for_period(period, settings),
             factory=factory,
         )
+        if resp is None:
+            raise RuntimeError("cache_miss_after_fetch")
         _last_good[cache_key] = resp
         return resp
     except Exception as exc:
         if isinstance(exc, RuntimeError) and str(exc) == "empty_data":
+            logger.warning("flow empty_data period=%s indicator=%s", period, indicator)
             return JSONResponse(
                 status_code=503,
                 content={
@@ -74,6 +84,12 @@ def get_flow(
                     }
                 },
             )
+        logger.exception(
+            "flow upstream failure period=%s indicator=%s: %s",
+            period,
+            indicator,
+            exc,
+        )
         stale = _last_good.get(cache_key)
         if stale is not None:
             return stale.model_copy(

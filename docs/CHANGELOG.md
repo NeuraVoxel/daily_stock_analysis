@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 > For user-friendly release highlights, see the [GitHub Releases](https://github.com/ZhuLinsen/daily_stock_analysis/releases) page.
 
 ## [Unreleased]
+- [修复] `market-flow` 在 Docker 内东财资金流接口被普通 `requests` 断连导致 `/api/flow` 503：改用 `curl_cffi` 浏览器指纹拉取并加重试与错误日志。
+- [修复] `market-flow` 东财 `push2` 不可达时自动降级到同花顺行业资金流，避免 Docker UI 持续 503。
 - [新功能] `market-flow/` 支持 Docker Compose 一键启动前后端（nginx 托管前端并反代 `/api`，后端 uvicorn:8001），与主站 `docker/` 栈隔离。
 - [文档] 新增 `docs/wiki/data-fetch-interfaces.md`：统计单股分析各数据块的 Manager 入口、Fetcher/搜索 Provider fallback、底层库与 HTTP API，以及对应环境变量；并与 `stock-analysis.md`、文档索引互链。
 - [文档] 新增 `docs/wiki/stock-analysis.md`：从本仓库实现说明单股分析所需信息分层（硬依赖 / 日线骨架 / 实时·筹码·基本面·趋势·情报）、端到端流水线与决策仪表盘产出，并链到数据源与 AnalysisContextPack 专题。
