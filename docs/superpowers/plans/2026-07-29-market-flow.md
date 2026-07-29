@@ -915,15 +915,15 @@ def get_flow(
     cache_key = f"{period}:{indicator}:industry"
 
     if at is not None:
-        # MVP: no historical upstream slices; only reject explicit scrub for non-session use
-        raise HTTPException(
+        # MVP: historical upstream scrub unsupported; session scrub is client-side only
+        return JSONResponse(
             status_code=400,
-            detail=FlowErrorResponse(
-                error=FlowErrorBody(
-                    code="unsupported_scrub",
-                    message="当前公开源不支持按历史时刻回放，请使用页面内会话快照时间轴",
-                )
-            ).model_dump(),
+            content={
+                "error": {
+                    "code": "unsupported_scrub",
+                    "message": "当前公开源不支持按历史时刻回放，请使用页面内会话快照时间轴",
+                }
+            },
         )
 
     def factory() -> FlowResponse:
@@ -963,24 +963,23 @@ def get_flow(
                     )
                 }
             )
-        raise HTTPException(
+        return JSONResponse(
             status_code=503,
-            detail=FlowErrorResponse(
-                error=FlowErrorBody(
-                    code="upstream_unavailable",
-                    message="资金流数据暂时不可用，请稍后重试",
-                )
-            ).model_dump(),
+            content={
+                "error": {
+                    "code": "upstream_unavailable",
+                    "message": "资金流数据暂时不可用，请稍后重试",
+                }
+            },
         )
 ```
 
-**Important:** FastAPI `HTTPException(detail=...)` may nest oddly for the client. Prefer a custom exception handler in `main.py` that returns the JSON shape from the design:
+Add imports at top of `routes_flow.py`: `from fastapi.responses import JSONResponse`. Return type of `get_flow` becomes `FlowResponse | JSONResponse`.
 
 ```python
 # market-flow/backend/app/main.py
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from app.api.routes_flow import router as flow_router
 from app.settings import get_settings
@@ -996,43 +995,10 @@ app.add_middleware(
 app.include_router(flow_router, prefix="/api")
 
 
-@app.exception_handler(Exception)
-async def unhandled(_, exc: Exception):
-    # Keep generic; routes raise HTTPException for known cases
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": {
-                "code": "upstream_unavailable",
-                "message": "资金流数据暂时不可用，请稍后重试",
-            }
-        },
-    )
-
-
 @app.get("/api/health")
 def health():
     return {"ok": True}
 ```
-
-Adjust `routes_flow.py` so API tests receive `{"error": {...}}` at top level: use `JSONResponse` directly instead of `HTTPException` for error paths if needed.
-
-```python
-# preferred error return in routes_flow.py
-from fastapi.responses import JSONResponse
-
-return JSONResponse(
-    status_code=503,
-    content={
-        "error": {
-            "code": "upstream_unavailable",
-            "message": "资金流数据暂时不可用，请稍后重试",
-        }
-    },
-)
-```
-
-Same pattern for `unsupported_scrub` with status 400.
 
 - [ ] **Step 4: Fix tests if detail wrapping differs; ensure PASS**
 
@@ -1455,7 +1421,71 @@ export function FlowCanvas({ data, particlesEnabled }: Props) {
   }, [outs, ins, exitNode]);
 
   useEffect(() => {
-    // particle rAF loop using layout + display_links; cancel on cleanup
+    const canvas = canvasRef.current;
+    const svg = svgRef.current;
+    if (!canvas || !svg) return;
+    const reduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (!particlesEnabled || reduced) {
+      const ctx = canvas.getContext("2d");
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+
+    type Particle = {
+      linkIndex: number;
+      t: number;
+      speed: number;
+      toExit: boolean;
+    };
+    const paths = Array.from(svg.querySelectorAll("path"));
+    const particles: Particle[] = [];
+    const maxParticles = 120;
+    data.display_links.forEach((link, linkIndex) => {
+      const count = Math.min(
+        12,
+        Math.max(1, Math.round(Math.sqrt(link.amount))),
+      );
+      for (let i = 0; i < count && particles.length < maxParticles; i++) {
+        particles.push({
+          linkIndex,
+          t: Math.random(),
+          speed: 0.002 + Math.min(0.01, link.amount / 5000),
+          toExit: link.to === "market_exit",
+        });
+      }
+    });
+
+    let raf = 0;
+    const tick = () => {
+      if (document.hidden) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      for (const p of particles) {
+        const path = paths[p.linkIndex] as SVGPathElement | undefined;
+        if (!path) continue;
+        const len = path.getTotalLength();
+        p.t = (p.t + p.speed) % 1;
+        const pt = path.getPointAtLength(p.t * len);
+        ctx.beginPath();
+        ctx.fillStyle = p.toExit ? "#f5f5f5" : "#4ade80";
+        ctx.globalAlpha = 0.85;
+        ctx.arc(pt.x * (rect.width / 1000), pt.y * (rect.height / 700), 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [data, particlesEnabled, layout]);
 
   return (
