@@ -1,0 +1,32 @@
+:root {
+  --bg: #0a0a0a;
+  --text: #e5e5e5;
+  --green: #22c55e;
+  --red: #ef4444;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+}
+.flow-canvas {
+  position: relative;
+  width: min(960px, 100%);
+  margin: 0 auto;
+  aspect-ratio: 10 / 7;
+  background: radial-gradient(ellipse at center, #141414 0%, #050505 70%);
+}
+.flow-svg,
+.flow-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.flow-particles {
+  pointer-events: none;
+}
+.period-tabs button.active {
+  border-bottom: 2px solid var(--green);
+}
