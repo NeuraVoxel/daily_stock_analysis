@@ -30,3 +30,74 @@ body {
 .period-tabs button.active {
   border-bottom: 2px solid var(--green);
 }
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+.app h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  text-align: center;
+}
+.period-tabs {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.period-tabs button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+}
+.scrubber {
+  margin-bottom: 0.75rem;
+}
+.scrubber input[type="range"] {
+  width: 100%;
+}
+.scrubber-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+.particle-toggle {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.banner {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+.banner.error {
+  border-color: var(--red);
+  color: var(--red);
+}
+.banner.warn {
+  border-color: #ca8a04;
+  color: #facc15;
+}
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+.app-footer {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: #888;
+  text-align: center;
+}

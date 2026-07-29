@@ -1,122 +1,90 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useCallback, useEffect, useState } from "react";
+import { fetchFlow } from "./api/client";
+import { PeriodTabs } from "./components/PeriodTabs";
+import { TimeScrubber } from "./components/TimeScrubber";
+import { FlowCanvas } from "./components/FlowCanvas";
+import type { FlowResponse, Period } from "./types/flow";
+import "./styles/flow.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [period, setPeriod] = useState<Period>("realtime");
+  const [live, setLive] = useState<FlowResponse | null>(null);
+  const [view, setView] = useState<FlowResponse | null>(null);
+  const [snapshots, setSnapshots] = useState<FlowResponse[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [particles, setParticles] = useState(true);
+
+  const load = useCallback(async (p: Period) => {
+    try {
+      const data = await fetchFlow(p);
+      setError(null);
+      setLive(data);
+      setView(data);
+      if (p === "realtime") {
+        setSnapshots((prev) => {
+          if (prev.some((x) => x.as_of === data.as_of)) return prev;
+          return [...prev, data].slice(-80);
+        });
+      } else {
+        setSnapshots([]);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "加载失败");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load(period);
+  }, [period, load]);
+
+  useEffect(() => {
+    if (period !== "realtime") return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load("realtime");
+    }, 45_000);
+    return () => window.clearInterval(id);
+  }, [period, load]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="app">
+      <h1>行业资金流向</h1>
+      <PeriodTabs value={period} onChange={setPeriod} />
+      <TimeScrubber
+        enabled={period === "realtime" && snapshots.length > 1}
+        marks={snapshots.map((s) => s.as_of)}
+        value={view?.as_of ?? null}
+        onChange={(iso) => {
+          const hit = snapshots.find((s) => s.as_of === iso);
+          if (hit) setView(hit);
+        }}
+      />
+      <label className="particle-toggle">
+        <input
+          type="checkbox"
+          checked={particles}
+          onChange={(e) => setParticles(e.target.checked)}
+        />
+        粒子动画
+      </label>
+      {error && <div className="banner error">{error}</div>}
+      {view?.meta.stale && <div className="banner">数据可能过期（缓存）</div>}
+      {view?.meta.warnings?.map((w) => (
+        <div key={w} className="banner warn">
+          {w}
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      ))}
+      {view ? (
+        <FlowCanvas data={view} particlesEnabled={particles} />
+      ) : (
+        <div className="loading">加载中…</div>
+      )}
+      {view && (
+        <footer className="app-footer">
+          as_of={view.as_of} · {view.meta.source}
+          {live && view.as_of !== live.as_of ? " · 历史快照" : ""}
+        </footer>
+      )}
+    </main>
+  );
 }
-
-export default App
