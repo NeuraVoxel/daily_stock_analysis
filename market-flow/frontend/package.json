@@ -11,7 +11,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "d3": "^7.9.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
