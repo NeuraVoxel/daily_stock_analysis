@@ -11,7 +11,7 @@ def build_display_graph(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
     """Build nodes + display_links from per-sector nets (亿元).
 
-    Outflow nets are negative; inflow nets positive.
+    Outflow nets are negative; inflow nets positive. Zero-net sectors are omitted.
     """
     warnings: list[str] = []
     outs = sorted(
@@ -75,16 +75,17 @@ def build_display_graph(
             for inn in ins:
                 share = float(inn["net"]) / total_in
                 alloc = out_amt * (total_in / total_out) * share
-                if alloc <= 0:
+                amount = round(alloc, 4)
+                if amount <= 0:
                     continue
                 links.append(
                     {
                         "from": out["id"],
                         "to": inn["id"],
-                        "amount": round(alloc, 4),
+                        "amount": amount,
                     }
                 )
-                remaining -= alloc
+                remaining -= amount
         if remaining > 1e-9:
             links.append(
                 {

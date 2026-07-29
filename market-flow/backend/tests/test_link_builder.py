@@ -23,6 +23,20 @@ def test_outflow_side_conserved_and_exit_non_negative():
     assert warnings == []
 
 
+def test_rounded_amounts_conserve_outflow_side():
+    sectors = [{"id": f"O{i}", "name": f"O{i}", "net": -33.3333} for i in range(3)]
+    sectors += [{"id": f"I{i}", "name": f"I{i}", "net": 11.1111} for i in range(4)]
+    nodes, links, warnings = build_display_graph(sectors, top_n=10, top_m=10)
+
+    out_nets = {n["id"]: -float(n["net"]) for n in nodes if n["side"] == "out"}
+    by_from = {}
+    for link in links:
+        by_from.setdefault(link["from"], 0.0)
+        by_from[link["from"]] += link["amount"]
+    for out_id, expected in out_nets.items():
+        assert abs(by_from[out_id] - expected) < 1e-6
+
+
 def test_top_n_truncation_adds_warning():
     sectors = [{"id": f"O{i}", "name": f"O{i}", "net": -float(i + 1)} for i in range(12)]
     sectors += [{"id": "IN", "name": "IN", "net": 5.0}]
