@@ -1,8 +1,22 @@
 # Market Flow — 行业资金流向
 
-Standalone A-share **industry** sector fund-flow visualization. This app lives under `market-flow/` and is **not** part of the main DSA runtime (`main.py`, `server.py`, `apps/dsa-web`, root `.env`, or main Docker/CI paths).
+Standalone A-share **industry** sector fund-flow visualization. This app lives under `market-flow/` and is **not** part of the main DSA runtime (`main.py`, `server.py`, `apps/dsa-web`, root `.env`, or main `docker/` compose).
 
-## Quick start
+## Quick start (Docker)
+
+From `market-flow/`:
+
+```bash
+cp .env.example .env   # optional: ports / CORS / cache
+docker compose up --build
+```
+
+- UI: `http://127.0.0.1:8080` (nginx serves the SPA and proxies `/api` → backend)
+- API (direct): `http://127.0.0.1:8001/api/health`
+
+Stop: `docker compose down`
+
+## Quick start (local without Docker)
 
 ### Backend (Python 3.10+ recommended)
 
@@ -24,8 +38,11 @@ pnpm run dev   # or: npm run dev
 
 Open `http://127.0.0.1:5173`. Vite proxies `/api` → `http://127.0.0.1:8001`.
 
-Optional config: copy `backend/.env.example` to `backend/.env` (timeouts, cache TTLs, Top-N/M). Do **not** use the repository root `.env`.
+Optional config:
+- Docker / compose: `market-flow/.env` (from `.env.example`)
+- Local uvicorn: `backend/.env` (from `backend/.env.example`)
 
+Do **not** use the repository root `.env`.
 ## Period mapping
 
 The UI shows five tabs; the backend maps them to East Money / AkShare indicator windows:
