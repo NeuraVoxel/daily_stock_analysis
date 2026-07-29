@@ -63,7 +63,17 @@ def get_flow(
         )
         _last_good[cache_key] = resp
         return resp
-    except Exception:
+    except Exception as exc:
+        if isinstance(exc, RuntimeError) and str(exc) == "empty_data":
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": {
+                        "code": "empty_data",
+                        "message": "资金流数据为空，请稍后重试",
+                    }
+                },
+            )
         stale = _last_good.get(cache_key)
         if stale is not None:
             return stale.model_copy(
