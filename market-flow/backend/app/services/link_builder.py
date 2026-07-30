@@ -24,11 +24,6 @@ def build_display_graph(
         reverse=True,
     )
 
-    if len(outs) > top_n:
-        warnings.append(f"流出板块已截断为 Top-{top_n}，流入侧守恒可能不完整")
-    if len(ins) > top_m:
-        warnings.append(f"流入板块已截断为 Top-{top_m}")
-
     outs = outs[:top_n]
     ins = ins[:top_m]
 

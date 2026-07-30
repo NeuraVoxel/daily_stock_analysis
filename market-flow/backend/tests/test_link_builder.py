@@ -37,9 +37,11 @@ def test_rounded_amounts_conserve_outflow_side():
         assert abs(by_from[out_id] - expected) < 1e-6
 
 
-def test_top_n_truncation_adds_warning():
+def test_top_n_truncation_keeps_top_only():
     sectors = [{"id": f"O{i}", "name": f"O{i}", "net": -float(i + 1)} for i in range(12)]
     sectors += [{"id": "IN", "name": "IN", "net": 5.0}]
     nodes, links, warnings = build_display_graph(sectors, top_n=3, top_m=3)
-    assert any("truncat" in w.lower() or "截断" in w for w in warnings)
+    assert warnings == []
     assert len([n for n in nodes if n["side"] == "out"]) == 3
+    assert len([n for n in nodes if n["side"] == "in"]) == 1
+    assert links  # still builds display links from truncated set

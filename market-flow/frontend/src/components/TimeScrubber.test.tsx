@@ -41,6 +41,7 @@ describe("TimeScrubber", () => {
         playing
         onPlayingChange={onPlayingChange}
         frameMs={100}
+        showPlayButton={false}
       />,
     );
 
@@ -67,5 +68,20 @@ describe("TimeScrubber", () => {
     fireEvent.click(screen.getByRole("button", { name: "播放" }));
     expect(onChange).toHaveBeenCalledWith(marks[0]);
     expect(onPlayingChange).toHaveBeenCalledWith(true);
+  });
+
+  it("shows session tick labels from the reference timeline", () => {
+    render(
+      <TimeScrubber
+        enabled
+        marks={marks}
+        value={marks[0]!}
+        onChange={vi.fn()}
+        showPlayButton={false}
+      />,
+    );
+    expect(screen.getByText("9:30")).toBeTruthy();
+    expect(screen.getByText("14:00")).toBeTruthy();
+    expect(screen.getByText("15:00")).toBeTruthy();
   });
 });
