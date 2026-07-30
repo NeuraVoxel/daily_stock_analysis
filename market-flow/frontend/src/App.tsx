@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchFlow } from "./api/client";
+import { fetchFlow, fetchShanghaiIndex } from "./api/client";
+import type { IndexQuote } from "./api/client";
 import { PeriodTabs } from "./components/PeriodTabs";
 import { TimeScrubber } from "./components/TimeScrubber";
 import { FlowCanvas } from "./components/FlowCanvas";
@@ -18,16 +19,31 @@ function formatDayTitle(iso: string | null | undefined): string {
   return `${y}年${Number(m)}月${Number(day)}日 全天数据`;
 }
 
+function formatChangePct(pct: number): string {
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(2)}%`;
+}
+
 export default function App() {
   const [period, setPeriod] = useState<Period>("realtime");
   const [live, setLive] = useState<FlowResponse | null>(null);
   const [view, setView] = useState<FlowResponse | null>(null);
   const [snapshots, setSnapshots] = useState<FlowResponse[]>([]);
+  const [indexQuote, setIndexQuote] = useState<IndexQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [particles, setParticles] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<1 | 2>(1);
+
+  const loadIndex = useCallback(async () => {
+    try {
+      const quote = await fetchShanghaiIndex();
+      setIndexQuote(quote);
+    } catch {
+      // Keep last good quote; header is non-blocking.
+    }
+  }, []);
 
   const load = useCallback(async (p: Period) => {
     try {
@@ -54,13 +70,18 @@ export default function App() {
   }, [period, load, demoMode]);
 
   useEffect(() => {
+    void loadIndex();
+  }, [loadIndex]);
+
+  useEffect(() => {
     if (demoMode || period !== "realtime") return;
     const id = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void load("realtime");
+      void loadIndex();
     }, 45_000);
     return () => window.clearInterval(id);
-  }, [period, load, demoMode]);
+  }, [period, load, loadIndex, demoMode]);
 
   const startDemo = useCallback(async () => {
     let seed = live;
@@ -109,10 +130,39 @@ export default function App() {
     setPlaying(true);
   }, [scrubberEnabled, playing, snapshots, view?.as_of]);
 
+  const indexTone =
+    indexQuote == null
+      ? ""
+      : indexQuote.change_pct > 0
+        ? "up"
+        : indexQuote.change_pct < 0
+          ? "down"
+          : "flat";
+
   return (
     <main className={`app ${demoMode ? "demo-active" : ""}`.trim()}>
       <header className="app-header">
-        <h1>{formatDayTitle(view?.as_of ?? live?.as_of)}</h1>
+        <div className="title-row">
+          <h1>{formatDayTitle(view?.as_of ?? live?.as_of)}</h1>
+          {indexQuote && (
+            <div
+              className={`index-quote ${indexTone}`}
+              title={
+                indexQuote.stale
+                  ? "指数可能过期（缓存）"
+                  : `as_of ${indexQuote.as_of}`
+              }
+            >
+              <span className="index-name">{indexQuote.name}</span>
+              <span className="index-price">
+                {indexQuote.price.toFixed(2)}
+              </span>
+              <span className="index-pct">
+                {formatChangePct(indexQuote.change_pct)}
+              </span>
+            </div>
+          )}
+        </div>
         <PeriodTabs
           value={period}
           onChange={(p) => {

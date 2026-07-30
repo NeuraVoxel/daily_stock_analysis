@@ -38,19 +38,36 @@ _HEADERS = {
     "Referer": "https://data.eastmoney.com/bkzj/hy.html",
     "Accept": "application/json, text/plain, */*",
 }
+_INDEX_HEADERS = {
+    "Referer": "https://quote.eastmoney.com/zs000001.html",
+    "Accept": "application/json, text/plain, */*",
+}
+_INDEX_URLS = (
+    "https://push2.eastmoney.com/api/qt/stock/get",
+    "https://push2delay.eastmoney.com/api/qt/stock/get",
+)
+# Shanghai Composite
+_SH_INDEX_SECID = "1.000001"
 
 
-def _http_get(url: str, *, params: dict[str, Any], timeout: float) -> dict[str, Any]:
+def _http_get(
+    url: str,
+    *,
+    params: dict[str, Any],
+    timeout: float,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """GET with browser TLS fingerprint (plain requests often reset in Docker)."""
     from curl_cffi import requests as crequests
 
+    req_headers = headers or _HEADERS
     last_err: Exception | None = None
     for attempt in range(3):
         try:
             resp = crequests.get(
                 url,
                 params=params,
-                headers=_HEADERS,
+                headers=req_headers,
                 impersonate="chrome",
                 timeout=timeout,
             )
@@ -213,3 +230,51 @@ def fetch_sector_fund_flow_rank(
         raise RuntimeError("empty_data")
     logger.info("using tonghuashun industry fund-flow fallback indicator=%s", indicator)
     return df, "tonghuashun"
+
+
+def fetch_shanghai_index(*, timeout_sec: float = 20.0) -> dict[str, Any]:
+    """Fetch 上证指数 latest quote (price / change / change_pct).
+
+    Uses East Money push2 with fltt=2 so numeric fields are already scaled.
+    """
+    params = {
+        "secid": _SH_INDEX_SECID,
+        "fields": "f43,f57,f58,f60,f169,f170",
+        "ut": "fa5fd1943c7b386f172d6893dbfba10b",
+        "fltt": "2",
+        "invt": "2",
+    }
+    last_err: Exception | None = None
+    for url in _INDEX_URLS:
+        try:
+            payload = _http_get(
+                url,
+                params=params,
+                timeout=timeout_sec,
+                headers=_INDEX_HEADERS,
+            )
+            data = payload.get("data")
+            if not isinstance(data, dict):
+                raise RuntimeError("empty index payload")
+            price = data.get("f43")
+            prev_close = data.get("f60")
+            change = data.get("f169")
+            change_pct = data.get("f170")
+            name = data.get("f58") or "上证指数"
+            code = str(data.get("f57") or "000001")
+            if price is None or change_pct is None:
+                raise RuntimeError("missing index fields")
+            return {
+                "code": code,
+                "name": str(name),
+                "price": float(price),
+                "prev_close": float(prev_close) if prev_close is not None else None,
+                "change": float(change) if change is not None else None,
+                "change_pct": float(change_pct),
+                "source": "eastmoney",
+            }
+        except Exception as exc:  # noqa: BLE001
+            last_err = exc
+            logger.warning("shanghai index fetch via %s failed: %s", url, exc)
+    assert last_err is not None
+    raise last_err

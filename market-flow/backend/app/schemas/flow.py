@@ -56,3 +56,15 @@ class FlowErrorBody(BaseModel):
 
 class FlowErrorResponse(BaseModel):
     error: FlowErrorBody
+
+
+class IndexQuote(BaseModel):
+    code: str
+    name: str
+    price: float
+    prev_close: float | None = None
+    change: float | None = None
+    change_pct: float
+    as_of: str
+    source: str
+    stale: bool = False

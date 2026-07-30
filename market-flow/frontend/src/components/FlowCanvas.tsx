@@ -97,7 +97,8 @@ export function FlowCanvas({ data, particlesEnabled }: Props) {
       linkIndex: number;
       t: number;
       speed: number;
-      kind: "flow" | "in" | "exit";
+      /** Destination drives color: inflow=red, exit=white. Never green into 流入. */
+      kind: "in" | "exit";
     };
     const paths = Array.from(svg.querySelectorAll("path.flow-arc"));
     const particles: Particle[] = [];
@@ -107,14 +108,14 @@ export function FlowCanvas({ data, particlesEnabled }: Props) {
         16,
         Math.max(2, Math.round(Math.sqrt(link.amount) * 1.2)),
       );
-      const kind =
-        link.to === "market_exit" ? "exit" : link.to ? "in" : "flow";
+      const kind: Particle["kind"] =
+        link.to === "market_exit" ? "exit" : "in";
       for (let i = 0; i < count && particles.length < maxParticles; i++) {
         particles.push({
           linkIndex,
           t: Math.random(),
           speed: 0.0025 + Math.min(0.012, link.amount / 8000),
-          kind: kind === "exit" ? "exit" : Math.random() > 0.35 ? "flow" : "in",
+          kind,
         });
       }
     });
@@ -132,12 +133,7 @@ export function FlowCanvas({ data, particlesEnabled }: Props) {
         const len = path.getTotalLength();
         p.t = (p.t + p.speed) % 1;
         const pt = path.getPointAtLength(p.t * len);
-        const color =
-          p.kind === "exit"
-            ? "#e8e8e8"
-            : p.kind === "in"
-              ? "#ff6b6b"
-              : "#39ff14";
+        const color = p.kind === "exit" ? "#e8e8e8" : "#ff6b6b";
         ctx.beginPath();
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.9;

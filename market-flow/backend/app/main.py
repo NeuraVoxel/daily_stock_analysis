@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes_flow import router as flow_router
+from app.api.routes_index import router as index_router
 from app.settings import get_settings
 
 settings = get_settings()
@@ -13,6 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(flow_router, prefix="/api")
+app.include_router(index_router, prefix="/api")
 
 
 @app.get("/api/health")

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - [改进] `market-flow` 演示回放以最新实时 `/api/flow` 板块净额为 15:00 终点外推盘中路径，收盘总量与真实数据对齐；无快照时回退到千亿级模板。
 - [改进] `market-flow` UI 对齐参考截图：竖屏深色布局、金色日期标题、四色图例、绿色时间轴进度点、左右金额+方块节点、灰色弧线与底部浮动播放条。
 - [改进] `market-flow` 不再在 `meta.warnings` 中提示 Top-N/Top-M 板块截断文案，避免 UI 横幅干扰主视图。
+- [新功能] `market-flow` 顶部展示上证指数最新点位与涨跌幅（`GET /api/index/shanghai`，东财 push2），A 股红涨绿跌着色。
 - [改进] `market-flow` 增加 `docker-compose.dev.yml` 与 Vite HMR 文档：开发时可用挂载源码热更新，无需每次重建 nginx 前端镜像。
 
 ## [3.27.0] - 2026-07-19

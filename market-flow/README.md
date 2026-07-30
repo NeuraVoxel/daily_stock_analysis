@@ -107,3 +107,7 @@ pnpm run build
 `GET /api/flow?period={realtime|day|week|month|year}`
 
 Returns nodes (green outflow / red inflow / white market exit), `display_links`, and `meta` (`source`, `stale`, `warnings`, `link_mode: display_constructed`).
+
+`GET /api/index/shanghai`
+
+Returns latest 上证指数 quote (`price`, `change_pct`, `as_of`, …) for the header. Failure returns last good cache with `stale: true` when available.
