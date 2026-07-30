@@ -112,7 +112,6 @@ function targetsFromSeed(seed?: FlowResponse | null): {
   outs: { id: string; name: string; net: number }[];
   ins: { id: string; name: string; net: number }[];
   day: string;
-  sourceNote: string;
 } {
   if (seed) {
     const outs = seed.nodes
@@ -126,7 +125,6 @@ function targetsFromSeed(seed?: FlowResponse | null): {
         outs,
         ins,
         day: seed.as_of.slice(0, 10),
-        sourceNote: `演示回放：以最新实时快照（${seed.as_of.slice(11, 16)}）为 15:00 终点外推盘中路径，非分钟级真实成交`,
       };
     }
   }
@@ -134,8 +132,6 @@ function targetsFromSeed(seed?: FlowResponse | null): {
     outs: FALLBACK_OUT.map((s) => ({ id: s.id, name: s.id, net: s.net })),
     ins: FALLBACK_IN.map((s) => ({ id: s.id, name: s.id, net: s.net })),
     day: "2026-07-30",
-    sourceNote:
-      "演示回放：无实时快照可用，使用量级接近典型交易日的合成板块净流入/流出",
   };
 }
 
@@ -195,7 +191,7 @@ function snapshotAtClock(
       source: "demo/intraday",
       link_mode: "display_constructed",
       stale: false,
-      warnings: [targets.sourceNote],
+      warnings: [],
     },
   };
 }

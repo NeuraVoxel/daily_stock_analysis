@@ -31,7 +31,7 @@ export default function App() {
   const [snapshots, setSnapshots] = useState<FlowResponse[]>([]);
   const [indexQuote, setIndexQuote] = useState<IndexQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [particles, setParticles] = useState(true);
+  const [particles] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<1 | 2>(1);
@@ -215,14 +215,6 @@ export default function App() {
             演示 09:30→15:00
           </button>
         ) : null}
-        <label className="particle-toggle">
-          <input
-            type="checkbox"
-            checked={particles}
-            onChange={(e) => setParticles(e.target.checked)}
-          />
-          粒子动画
-        </label>
       </div>
 
       {error && <div className="banner error">{error}</div>}
