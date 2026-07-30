@@ -89,7 +89,7 @@ Arcs and particles illustrate sector flow direction and magnitude. `display_link
 
 ## Intraday demo (09:30→15:00)
 
-The UI **演示 09:30→15:00** button loads a synthetic A-share session (morning 09:30–11:30 + afternoon 13:00–15:00), then auto-plays the scrubber so arcs/particles evolve across the trading day. This does **not** call the API `at=` scrub (unsupported upstream); exit demo to resume live polling.
+The UI **演示 09:30→15:00** button fetches the latest realtime `/api/flow` snapshot and uses its industry nets as the **15:00 close target**, then synthesizes a growing 09:30→15:00 path (morning + afternoon session only). Close-frame totals match the live seed; mid-session values are extrapolated, not minute-level historical ticks. If the API is unavailable, a thousand-yi-scale fallback template is used. Exit demo to resume live polling.
 
 ## Tests
 

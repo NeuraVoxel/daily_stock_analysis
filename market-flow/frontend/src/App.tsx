@@ -53,16 +53,24 @@ export default function App() {
     return () => window.clearInterval(id);
   }, [period, load, demoMode]);
 
-  const startDemo = useCallback(() => {
-    const frames = buildIntradayDemoSnapshots(5);
+  const startDemo = useCallback(async () => {
+    let seed = live;
+    try {
+      seed = await fetchFlow("realtime");
+      setLive(seed);
+      setError(null);
+    } catch (e) {
+      if (!seed) {
+        setError(e instanceof Error ? e.message : "加载失败");
+      }
+    }
+    const frames = buildIntradayDemoSnapshots(5, seed);
     setDemoMode(true);
     setPeriod("realtime");
-    setError(null);
-    setLive(null);
     setSnapshots(frames);
     setView(frames[0] ?? null);
     setPlaying(true);
-  }, []);
+  }, [live]);
 
   const exitDemo = useCallback(() => {
     setPlaying(false);
