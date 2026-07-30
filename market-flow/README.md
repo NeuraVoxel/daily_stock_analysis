@@ -16,6 +16,32 @@ docker compose up --build
 
 Stop: `docker compose down`
 
+### Hot reload (Vite HMR)
+
+The default compose serves a **built** nginx SPA on `:8080` — source edits need `docker compose up --build frontend`. For live edits, use one of:
+
+**A. Recommended — Docker backend + local Vite**
+
+```bash
+# keep API in Docker
+docker compose up -d backend
+
+# HMR in a host terminal
+cd frontend && pnpm install && pnpm run dev
+```
+
+Open `http://127.0.0.1:5173` (proxies `/api` → `:8001`).
+
+**B. Full Docker HMR**
+
+```bash
+# stop the nginx SPA stack first (avoids port / project conflicts)
+docker compose down
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Open `http://127.0.0.1:5173`. Mounts `frontend/` into a Vite container; save → browser hot-updates, no nginx rebuild.
+
 ## Quick start (local without Docker)
 
 ### Backend (Python 3.10+ recommended)
@@ -60,6 +86,10 @@ Warnings for week/month/year approximations appear in `meta.warnings` and in the
 ## Display-constructed links
 
 Arcs and particles illustrate sector flow direction and magnitude. `display_links` are **constructed for visualization** from top outflow/inflow sectors plus a `market_exit` sink — they are **not** audited pairwise capital rotation. `pair_links` is reserved (`[]` in MVP) for future true X→Y rotation data.
+
+## Intraday demo (09:30→15:00)
+
+The UI **演示 09:30→15:00** button loads a synthetic A-share session (morning 09:30–11:30 + afternoon 13:00–15:00), then auto-plays the scrubber so arcs/particles evolve across the trading day. This does **not** call the API `at=` scrub (unsupported upstream); exit demo to resume live polling.
 
 ## Tests
 
